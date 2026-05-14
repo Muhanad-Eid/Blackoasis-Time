@@ -258,27 +258,43 @@
     height: 16px;
   }
 
-  input[type="time"] {
-    width: 100%;
+  .custom-time-wrap {
+    display: flex;
+    align-items: center;
     background: var(--surface-2);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
-    padding: 11px 40px 11px 14px;
+    padding: 8px 14px;
+    gap: 4px;
+    transition: border-color 0.2s;
+  }
+  .custom-time-wrap:focus-within { border-color: var(--gold-dim); background: var(--surface-3); }
+
+  .time-part {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 18px;
+    font-size: 28px;
     font-weight: 500;
     color: var(--text);
+    background: transparent;
+    border: none;
     outline: none;
-    transition: border-color 0.2s, background 0.2s;
-    appearance: none;
-    -webkit-appearance: none;
-    color-scheme: dark;
+    width: 56px;
+    text-align: center;
+    -moz-appearance: textfield;
+    appearance: textfield;
   }
-  input[type="time"]:focus {
-    border-color: var(--gold-dim);
-    background: var(--surface-3);
+  .time-part::-webkit-outer-spin-button,
+  .time-part::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .time-part::placeholder { color: var(--text-dim); }
+
+  .time-sep {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 28px;
+    font-weight: 300;
+    color: var(--text-muted);
+    user-select: none;
+    line-height: 1;
   }
-  input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(0.5); cursor: pointer; }
 
   .input-hint {
     font-size: 12px;
@@ -493,8 +509,8 @@
 
 <!-- ══════════════ HEADER ══════════════ -->
 <header>
-  <div class="logo-wrap" >
-    <a href="https://blackoasis.jo/"><img id="logo-img" alt="Logo" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTKi21nxNdahmSYfC6oNv77DoRbqXzqCkouaA&s"/></a>
+  <div class="logo-wrap" title="Click to upload logo">
+        <a href="https://blackoasis.jo/"><img id="logo-img" alt="Logo" src="images.jpg"/></a>
   </div>
 
   <div class="brand">
@@ -533,9 +549,10 @@
           <span class="input-num">1</span>
           First Timestamp
         </label>
-        <div class="time-input-wrap">
-          <input type="time" id="time1" value="09:00" step="60" oninput="calculate()" />
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><polyline points="12 6 12 12 15.5 14"/></svg>
+        <div class="custom-time-wrap">
+          <input class="time-part" type="number" id="time1-h" min="0" max="23" value="9" placeholder="HH" oninput="clampAndCalculate(this,23)" />
+          <span class="time-sep">:</span>
+          <input class="time-part" type="number" id="time1-m" min="0" max="59" value="0" placeholder="MM" oninput="clampAndCalculate(this,59)" />
         </div>
         <div class="input-hint">Start or origin point</div>
       </div>
@@ -545,9 +562,10 @@
           <span class="input-num">2</span>
           Second Timestamp
         </label>
-        <div class="time-input-wrap">
-          <input type="time" id="time2" value="10:15" step="60" oninput="calculate()" />
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l3 3"/></svg>
+        <div class="custom-time-wrap">
+          <input class="time-part" type="number" id="time2-h" min="0" max="23" value="10" placeholder="HH" oninput="clampAndCalculate(this,23)" />
+          <span class="time-sep">:</span>
+          <input class="time-part" type="number" id="time2-m" min="0" max="59" value="15" placeholder="MM" oninput="clampAndCalculate(this,59)" />
         </div>
         <div class="input-hint">End or comparison point</div>
       </div>
@@ -614,6 +632,9 @@
 
 <!-- ══════════════ SCRIPTS ══════════════ -->
 <script>
+  /* ── Force 24-hour format ── */
+  /* (using custom number inputs — no AM/PM possible) */
+
   /* ── Clock ── */
   function updateClock() {
     const now  = new Date();
@@ -635,54 +656,58 @@
   updateClock();
   setInterval(updateClock, 1000);
 
-  /* ── Difference Calculation ── */
-  function toMinutes(val) {
-    const [h, m] = val.split(':').map(Number);
-    return h * 60 + m;
+  /* ── Helpers ── */
+  function clampAndCalculate(el, max) {
+    let v = parseInt(el.value, 10);
+    if (isNaN(v)) v = 0;
+    if (v < 0)   v = 0;
+    if (v > max) v = max;
+    el.value = v;
+    calculate();
+  }
+
+  function getTime(prefix) {
+    const h = parseInt(document.getElementById(prefix + '-h').value, 10) || 0;
+    const m = parseInt(document.getElementById(prefix + '-m').value, 10) || 0;
+    return { h, m, total: h * 60 + m, label: `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}` };
   }
 
   function formatHMS(totalMins) {
-    const abs = Math.abs(totalMins);
-    const h   = Math.floor(abs / 60);
-    const m   = abs % 60;
-    return `${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m 00s`;
+    const h = Math.floor(totalMins / 60);
+    const m = totalMins % 60;
+    return `${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m`;
   }
 
   function calculate() {
-    const v1 = document.getElementById('time1').value;
-    const v2 = document.getElementById('time2').value;
-    if (!v1 || !v2) return;
+    const t1 = getTime('time1');
+    const t2 = getTime('time2');
 
-    const m1 = toMinutes(v1);
-    const m2 = toMinutes(v2);
-
-    const errorBanner  = document.getElementById('error-banner');
-    const resultCard   = document.querySelector('.result-card');
-    const compareRow   = document.querySelector('.compare-row');
+    const errorBanner = document.getElementById('error-banner');
+    const resultCard  = document.querySelector('.result-card');
+    const compareRow  = document.querySelector('.compare-row');
 
     /* ── Validate: Time 2 must NOT be less than Time 1 ── */
-    if (m2 < m1) {
+    if (t2.total < t1.total) {
       errorBanner.classList.add('visible');
       resultCard.classList.add('has-error');
       compareRow.classList.add('has-error');
-      document.getElementById('cmp-t1').textContent  = v1;
-      document.getElementById('cmp-t2').textContent  = v2;
+      document.getElementById('cmp-t1').textContent  = t1.label;
+      document.getElementById('cmp-t2').textContent  = t2.label;
       document.getElementById('cmp-pill').textContent = '— min';
       return;
     }
 
-    /* ── Valid: clear error and compute ── */
+    /* ── Valid ── */
     errorBanner.classList.remove('visible');
     resultCard.classList.remove('has-error');
     compareRow.classList.remove('has-error');
 
-    const abs = m2 - m1;
-
-    document.getElementById('result-mins').textContent = abs;
-    document.getElementById('result-hms').textContent  = formatHMS(abs);
-    document.getElementById('cmp-t1').textContent      = v1;
-    document.getElementById('cmp-t2').textContent      = v2;
-    document.getElementById('cmp-pill').textContent    = `${abs} min`;
+    const diff = t2.total - t1.total;
+    document.getElementById('result-mins').textContent = diff;
+    document.getElementById('result-hms').textContent  = formatHMS(diff);
+    document.getElementById('cmp-t1').textContent      = t1.label;
+    document.getElementById('cmp-t2').textContent      = t2.label;
+    document.getElementById('cmp-pill').textContent    = `${diff} min`;
   }
 
   /* run on load */
