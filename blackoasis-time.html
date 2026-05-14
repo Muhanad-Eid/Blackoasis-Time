@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Blackoasis | Time Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+  /* ── Reset & Base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --gold:        #c8a96e;
+    --gold-light:  #e8d4a0;
+    --gold-dim:    #8a6f3e;
+    --bg:          #080c14;
+    --surface:     #0d1220;
+    --surface-2:   #111829;
+    --surface-3:   #16202e;
+    --border:      #1e2a3a;
+    --border-2:    #253346;
+    --text:        #dde6f5;
+    --text-muted:  #5a7090;
+    --text-dim:    #3a5068;
+    --accent:      #2a7fff;
+    --radius-sm:   8px;
+    --radius-md:   12px;
+    --radius-lg:   16px;
+  }
+
+  html { font-size: 16px; }
+
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Typography ── */
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  .label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  /* ── Header ── */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 40px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo-wrap {
+    position: relative;
+    width: 52px;
+    height: 52px;
+    border-radius: var(--radius-sm);
+    border: 1.5px dashed var(--border-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    overflow: hidden;
+    transition: border-color 0.2s;
+    flex-shrink: 0;
+  }
+  .logo-wrap:hover { border-color: var(--gold); }
+  .logo-wrap input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .logo-wrap img { width: 100%; height: 100%; object-fit: contain; border-radius: 6px; }
+  .logo-placeholder {
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    text-align: center;
+    line-height: 1.4;
+    pointer-events: none;
+  }
+
+  .brand { display: flex; flex-direction: column; gap: 2px; }
+  .brand-name {
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: linear-gradient(120deg, var(--gold) 0%, var(--gold-light) 55%, var(--gold) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+  }
+  .brand-tag {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  .header-date {
+    margin-left: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+    text-align: right;
+  }
+
+  /* ── Main Layout ── */
+  main {
+    flex: 1;
+    max-width: min(820px, 100%);
+    width: 100%;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(18px, 3vw, 28px);
+  }
+
+  /* ── Section Labels ── */
+  .section-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .section-label span {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── Current Time Card ── */
+  .current-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: 2px solid var(--gold);
+    border-radius: var(--radius-lg);
+    padding: 28px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+  }
+
+  .current-time-block {}
+  .current-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--gold-light);
+    line-height: 1;
+  }
+  .current-date {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 6px;
+    letter-spacing: 0.04em;
+  }
+
+  .live-badge {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: #0a1a0a;
+    border: 1px solid #1a3a1a;
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #4caf6e;
+    flex-shrink: 0;
+  }
+  .live-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #4caf6e;
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.4; transform: scale(0.8); }
+  }
+
+  /* ── Time Inputs ── */
+  .inputs-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .input-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 20px 22px;
+    transition: border-color 0.2s;
+  }
+  .input-card:hover { border-color: var(--border-2); }
+
+  .input-card label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+  }
+
+  .input-num {
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+    background: var(--surface-3);
+    border: 1px solid var(--border-2);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--gold);
+  }
+
+  .time-input-wrap { position: relative; }
+  .time-input-wrap svg {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-dim);
+    pointer-events: none;
+    width: 16px;
+    height: 16px;
+  }
+
+  input[type="time"] {
+    width: 100%;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 11px 40px 11px 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+    appearance: none;
+    -webkit-appearance: none;
+    color-scheme: dark;
+  }
+  input[type="time"]:focus {
+    border-color: var(--gold-dim);
+    background: var(--surface-3);
+  }
+  input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(0.5); cursor: pointer; }
+
+  .input-hint {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 8px;
+    letter-spacing: 0.02em;
+  }
+
+  /* ── Result Card ── */
+  .result-card {
+    background: linear-gradient(135deg, #0e1c10 0%, #081420 100%);
+    border: 1px solid #1e3428;
+    border-radius: var(--radius-lg);
+    padding: 28px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .result-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 0% 100%, #1a3a2020 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .result-left {}
+  .result-super {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: #4a7a5a;
+    margin-bottom: 8px;
+  }
+
+  .result-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: #6ecf8a;
+    line-height: 1;
+  }
+  .result-unit {
+    font-size: 18px;
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    color: #4a7a5a;
+    margin-left: 8px;
+  }
+
+  .result-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+  }
+
+  .result-hms {
+    background: #ffffff0d;
+    border: 1px solid #ffffff15;
+    border-radius: var(--radius-sm);
+    padding: 8px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: var(--text);
+    letter-spacing: 0.06em;
+  }
+
+  .result-direction {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    border-radius: 20px;
+  }
+  .dir-after  { background: #0a1f0a; border: 1px solid #1a3a1a; color: #4caf6e; }
+  .dir-before { background: #1f0a0a; border: 1px solid #3a1a1a; color: #cf6e6e; }
+  .dir-same   { background: #0a0f1f; border: 1px solid #1a253a; color: #6e8ecf; }
+
+  /* ── Error Banner ── */
+  .error-banner {
+    display: none;
+    align-items: center;
+    gap: 12px;
+    background: #1a0808;
+    border: 1px solid #5a1a1a;
+    border-left: 3px solid #cf4444;
+    border-radius: var(--radius-md);
+    padding: 14px 18px;
+    font-size: 13px;
+    color: #e07070;
+    letter-spacing: 0.02em;
+  }
+  .error-banner.visible { display: flex; }
+  .error-icon {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: #cf444422;
+    border: 1px solid #cf444466;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700;
+    color: #cf4444;
+    flex-shrink: 0;
+  }
+  .error-text strong { color: #e09090; font-weight: 700; display: block; margin-bottom: 2px; font-size: 13px; }
+  .result-card.has-error { opacity: 0.3; pointer-events: none; }
+  .compare-row.has-error .compare-time-block:last-child { border-color: #cf444455; }
+
+  /* ── Comparison Row ── */
+  .compare-row {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .compare-time-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 16px 18px;
+    text-align: center;
+  }
+  .compare-label { font-size: 10px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 6px; }
+  .compare-val   { font-family: 'JetBrains Mono', monospace; font-weight: 500; color: var(--text); }
+
+  .compare-arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .compare-arrow svg { color: var(--text-dim); width: 20px; height: 20px; }
+  .compare-diff-pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--gold);
+    background: #c8a96e15;
+    border: 1px solid #c8a96e30;
+    border-radius: 20px;
+    padding: 3px 10px;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+
+  /* ── Footer ── */
+  footer {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 16px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+  }
+
+  .footer-brand { font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gold-dim); }
+
+  /* ── Fluid Typography ── */
+  .current-time  { font-size: clamp(32px, 7vw, 56px); }
+  .result-value  { font-size: clamp(36px, 6.5vw, 56px); }
+  .brand-name    { font-size: clamp(15px, 2.5vw, 22px); }
+  .compare-val   { font-size: clamp(16px, 3vw, 22px); }
+
+  /* ── Fluid Spacing ── */
+  main { padding: clamp(20px, 4vw, 48px) clamp(16px, 4vw, 40px) clamp(40px, 6vw, 72px); }
+  header { padding: clamp(10px, 1.5vw, 16px) clamp(16px, 3vw, 40px); }
+  footer { padding: clamp(12px, 1.5vw, 18px) clamp(16px, 3vw, 40px); }
+  .current-card  { padding: clamp(18px, 3vw, 32px) clamp(18px, 3vw, 32px); }
+  .result-card   { padding: clamp(18px, 3vw, 32px) clamp(18px, 3vw, 32px); }
+  .input-card    { padding: clamp(14px, 2.5vw, 22px) clamp(14px, 2.5vw, 22px); }
+
+  /* ── Tablet (≤ 768px) ── */
+  @media (max-width: 768px) {
+    .inputs-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+    .compare-row { gap: 8px; }
+    input[type="time"] { font-size: clamp(14px, 3.5vw, 18px); }
+  }
+
+  /* ── Mobile (≤ 540px) ── */
+  @media (max-width: 540px) {
+    .inputs-grid  { grid-template-columns: 1fr; gap: 10px; }
+    .compare-row  { grid-template-columns: 1fr; gap: 8px; }
+    .compare-arrow { flex-direction: row; justify-content: center; }
+    .compare-arrow svg { transform: rotate(90deg); }
+    .current-card { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .result-card  { flex-direction: column; align-items: flex-start; gap: 16px; }
+    .result-right { align-items: flex-start; width: 100%; }
+    .result-hms   { width: 100%; text-align: center; }
+    footer { flex-direction: column; gap: 6px; text-align: center; font-size: 10px; }
+    .footer-center { display: none; }
+    .header-date { display: none; }
+    .brand-tag { display: none; }
+  }
+
+  /* ── Very small (≤ 360px) ── */
+  @media (max-width: 360px) {
+    .logo-wrap { width: 40px; height: 40px; }
+    main { gap: 18px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════ HEADER ══════════════ -->
+<header>
+  <div class="logo-wrap" >
+    <a href="https://blackoasis.jo/"><img id="logo-img" alt="Logo" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTKi21nxNdahmSYfC6oNv77DoRbqXzqCkouaA&s"/></a>
+  </div>
+
+  <div class="brand">
+    <div class="brand-name">Blackoasis</div>
+    <div class="brand-tag">Time Calculator</div>
+  </div>
+
+  <div class="header-date mono" id="header-date">—</div>
+</header>
+
+<!-- ══════════════ MAIN ══════════════ -->
+<main>
+
+  <!-- Current Time -->
+  <div>
+    <div class="section-label"><span>Current System Time</span></div>
+    <div class="current-card">
+      <div class="current-time-block">
+        <div class="current-time" id="current-time">00:00:00</div>
+        <div class="current-date" id="current-date">Loading…</div>
+      </div>
+      <div class="live-badge">
+        <div class="live-dot"></div>
+        Live
+      </div>
+    </div>
+  </div>
+
+  <!-- Time Inputs -->
+  <div>
+    <div class="section-label"><span>Enter Timestamps</span></div>
+    <div class="inputs-grid">
+
+      <div class="input-card">
+        <label>
+          <span class="input-num">1</span>
+          First Timestamp
+        </label>
+        <div class="time-input-wrap">
+          <input type="time" id="time1" value="09:00" step="60" oninput="calculate()" />
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><polyline points="12 6 12 12 15.5 14"/></svg>
+        </div>
+        <div class="input-hint">Start or origin point</div>
+      </div>
+
+      <div class="input-card">
+        <label>
+          <span class="input-num">2</span>
+          Second Timestamp
+        </label>
+        <div class="time-input-wrap">
+          <input type="time" id="time2" value="10:15" step="60" oninput="calculate()" />
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l3 3"/></svg>
+        </div>
+        <div class="input-hint">End or comparison point</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Error Banner -->
+  <div class="error-banner" id="error-banner">
+    <div class="error-icon">!</div>
+    <div class="error-text">
+      <strong>Invalid Time Order</strong>
+      Time 2 must be later than Time 1. Please enter a larger time in the second field.
+    </div>
+  </div>
+
+  <!-- Comparison Visual -->
+  <div class="compare-row">
+    <div class="compare-time-block">
+      <div class="compare-label">Time 1</div>
+      <div class="compare-val" id="cmp-t1">09:00</div>
+    </div>
+
+    <div class="compare-arrow">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <line x1="5" y1="12" x2="19" y2="12"/>
+        <polyline points="12 5 19 12 12 19"/>
+      </svg>
+      <div class="compare-diff-pill" id="cmp-pill">75 min</div>
+    </div>
+
+    <div class="compare-time-block">
+      <div class="compare-label">Time 2</div>
+      <div class="compare-val" id="cmp-t2">10:15</div>
+    </div>
+  </div>
+
+  <!-- Result -->
+  <div>
+    <div class="section-label"><span>Difference Result</span></div>
+    <div class="result-card">
+      <div class="result-left">
+        <div class="result-super">Total Duration</div>
+        <div>
+          <span class="result-value" id="result-mins">75</span>
+          <span class="result-unit">min</span>
+        </div>
+      </div>
+      <div class="result-right">
+        <div class="result-hms" id="result-hms">01h 15m 00s</div>
+        <div class="result-direction dir-after" id="result-dir">Time 2 is after Time 1</div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ══════════════ FOOTER ══════════════ -->
+<footer>
+  <span class="footer-brand">Blackoasis</span>
+  <span class="footer-center">All calculations are processed locally in your browser.</span>
+  <span id="footer-time" class="mono">—</span>
+</footer>
+
+<!-- ══════════════ SCRIPTS ══════════════ -->
+<script>
+  /* ── Clock ── */
+  function updateClock() {
+    const now  = new Date();
+    const hh   = String(now.getHours()).padStart(2, '0');
+    const mm   = String(now.getMinutes()).padStart(2, '0');
+    const ss   = String(now.getSeconds()).padStart(2, '0');
+    const time = `${hh}:${mm}:${ss}`;
+
+    const days   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const date   = `${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+
+    document.getElementById('current-time').textContent = time;
+    document.getElementById('current-date').textContent = date;
+    document.getElementById('header-date').textContent  = date;
+    document.getElementById('footer-time').textContent  = time;
+  }
+
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  /* ── Difference Calculation ── */
+  function toMinutes(val) {
+    const [h, m] = val.split(':').map(Number);
+    return h * 60 + m;
+  }
+
+  function formatHMS(totalMins) {
+    const abs = Math.abs(totalMins);
+    const h   = Math.floor(abs / 60);
+    const m   = abs % 60;
+    return `${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m 00s`;
+  }
+
+  function calculate() {
+    const v1 = document.getElementById('time1').value;
+    const v2 = document.getElementById('time2').value;
+    if (!v1 || !v2) return;
+
+    const m1 = toMinutes(v1);
+    const m2 = toMinutes(v2);
+
+    const errorBanner  = document.getElementById('error-banner');
+    const resultCard   = document.querySelector('.result-card');
+    const compareRow   = document.querySelector('.compare-row');
+
+    /* ── Validate: Time 2 must NOT be less than Time 1 ── */
+    if (m2 < m1) {
+      errorBanner.classList.add('visible');
+      resultCard.classList.add('has-error');
+      compareRow.classList.add('has-error');
+      document.getElementById('cmp-t1').textContent  = v1;
+      document.getElementById('cmp-t2').textContent  = v2;
+      document.getElementById('cmp-pill').textContent = '— min';
+      return;
+    }
+
+    /* ── Valid: clear error and compute ── */
+    errorBanner.classList.remove('visible');
+    resultCard.classList.remove('has-error');
+    compareRow.classList.remove('has-error');
+
+    const abs = m2 - m1;
+
+    document.getElementById('result-mins').textContent = abs;
+    document.getElementById('result-hms').textContent  = formatHMS(abs);
+    document.getElementById('cmp-t1').textContent      = v1;
+    document.getElementById('cmp-t2').textContent      = v2;
+    document.getElementById('cmp-pill').textContent    = `${abs} min`;
+  }
+
+  /* run on load */
+  calculate();
+
+  /* ── Logo Upload ── */
+  function handleLogo(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = document.getElementById('logo-img');
+      const ph  = document.getElementById('logo-placeholder');
+      img.src          = ev.target.result;
+      img.style.display = 'block';
+      ph.style.display  = 'none';
+    };
+    reader.readAsDataURL(file);
+  }
+</script>
+</body>
+</html>
